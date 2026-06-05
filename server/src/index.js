@@ -28,7 +28,7 @@ app.use(express.json());
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    mode: process.env.USE_MOCK_AI === 'true' ? 'mock-ai' : 'claude-api',
+    mode: process.env.USE_MOCK_AI === 'true' || !process.env.OPENAI_API_KEY ? 'mock-ai' : 'openai-gpt4o-mini',
     timestamp: new Date().toISOString(),
   });
 });
@@ -37,8 +37,8 @@ app.use('/api/analyze-assets', analyzeAssetsRoute);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  const mode = process.env.USE_MOCK_AI === 'true' || !process.env.ANTHROPIC_API_KEY
+  const mode = process.env.USE_MOCK_AI === 'true' || !process.env.OPENAI_API_KEY
     ? 'Mock AI'
-    : 'Claude API';
+    : 'OpenAI GPT-4o-mini';
   console.log(`Server running on port ${PORT} [mode: ${mode}]`);
 });

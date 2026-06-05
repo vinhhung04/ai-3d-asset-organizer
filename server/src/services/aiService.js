@@ -1,8 +1,8 @@
-const Anthropic = require('@anthropic-ai/sdk');
+const OpenAI = require('openai');
 const mockAiService = require('./mockAiService');
 
-const PROMPT_TEMPLATE = `You are an AI assistant specialized in 3D/360 digital twin and virtual tour project management.
-Analyze the following 3D project assets and return ONLY a valid JSON object.
+const PROMPT_TEMPLATE = `You are an AI assistant specialized in 3D/360 digital twin project management.
+Analyze the following project assets and return ONLY a valid JSON object.
 Do NOT wrap in markdown code blocks. Do NOT add explanation. Return raw JSON only.
 
 Project Name: {PROJECT_NAME}
@@ -25,7 +25,7 @@ Return exactly this JSON structure (fill all fields):
       "original_name": "<exact original name>",
       "category": "<one of the categories below>",
       "asset_type": "<short type slug e.g. panorama, sensor, hotspot, equipment, navigation, room, storage, station, object>",
-      "suggested_slug": "<lowercase-hyphen-slug following format: {project-type-prefix}-{category-token}-{asset-type}-{name}>",
+      "suggested_slug": "<lowercase-hyphen-slug: {project-type-prefix}-{category-token}-{asset-type}-{name}>",
       "priority": "<High | Medium | Low>",
       "management_note": "<one actionable note for managing this asset>"
     }
@@ -54,46 +54,40 @@ Slug format rules:
 - Category tokens: public, private, production, technical, safety, nav, hotspot, iot, panorama, object, facility, training
 
 Priority rules:
-- High: Safety Area, IoT / Sensor Point (critical for safety and monitoring)
-- Medium: Production Area, Technical Area (operational assets)
+- High: Safety Area, IoT / Sensor Point
+- Medium: Production Area, Technical Area
 - Low: everything else
 
-Data quality warnings: flag duplicate names, very short names (<4 chars), or assets with ambiguous descriptions.
-If no warnings, return an empty array: []`;
+If no data quality warnings, return: "data_quality_warnings": []`;
 
 async function analyzeAssets(payload) {
   const useMock =
-    process.env.USE_MOCK_AI === 'true' || !process.env.ANTHROPIC_API_KEY;
+    process.env.USE_MOCK_AI === 'true' || !process.env.OPENAI_API_KEY;
 
   if (useMock) {
     return mockAiService.analyzeAssets(payload);
   }
 
   const { projectName, projectType, assets } = payload;
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   const prompt = PROMPT_TEMPLATE
     .replace(/{PROJECT_NAME}/g, projectName)
     .replace(/{PROJECT_TYPE}/g, projectType)
     .replace('{ASSETS}', assets.map((a, i) => `${i + 1}. ${a}`).join('\n'));
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+  const completion = await client.chat.completions.create({
+    model: 'gpt-4o-mini',
     max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
+    response_format: { type: 'json_object' },
   });
 
-  const rawText = message.content[0].text;
-
-  // Strip markdown fences if Claude wrapped the response despite instructions
-  const cleaned = rawText
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
+  const rawText = completion.choices[0].message.content || '';
 
   let result;
   try {
-    result = JSON.parse(cleaned);
+    result = JSON.parse(rawText);
   } catch {
     throw new Error(
       `AI returned invalid JSON. Raw response: ${rawText.slice(0, 200)}`
