@@ -23,7 +23,12 @@ export async function analyzeAssets(request: AnalyzeRequest): Promise<AnalysisRe
       if (serverMessage) throw new Error(serverMessage);
 
       // Network errors
-      if (!err.response) throw new Error('Cannot reach the server. Make sure the backend is running on port 3001.');
+      if (!err.response) {
+        const hint = import.meta.env.VITE_API_BASE_URL
+          ? `Cannot reach the server at ${import.meta.env.VITE_API_BASE_URL}. The backend may be sleeping (Render free tier) — wait 30s and retry.`
+          : 'Cannot reach the server. Make sure the backend is running on port 3001.';
+        throw new Error(hint);
+      }
     }
     throw err;
   }
