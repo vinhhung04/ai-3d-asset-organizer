@@ -164,7 +164,7 @@ Nếu muốn dùng AI thật thay vì Mock AI:
 ```env
 USE_MOCK_AI=false
 OPENAI_API_KEY=sk-...
-AI_MODEL=gpt-4o-mini
+AI_MODEL=gpt-5.4-mini
 ```
 
 1. Restart server: `Ctrl+C` rồi `npm run dev`
@@ -200,7 +200,7 @@ AI_MODEL=gpt-5.4-mini           # model endpoint đó hỗ trợ
 | `USE_MOCK_AI`      | `true`                  | `true` = dùng mock AI, `false` = dùng OpenAI thật    |
 | `OPENAI_API_KEY`   | *(trống)*               | API key OpenAI hoặc compatible endpoint              |
 | `AI_BASE_URL`      | *(trống)*               | Custom endpoint URL (để trống = dùng OpenAI mặc định)|
-| `AI_MODEL`         | `gpt-4o-mini`           | Tên model muốn dùng                                  |
+| `AI_MODEL`         | `gpt-5.4-mini`          | Tên model muốn dùng                                  |
 | `CLIENT_URL`       | `http://localhost:5173` | URL frontend — dùng cho CORS whitelist               |
 
 ### Client (`client/.env.local`) — tùy chọn
@@ -276,7 +276,7 @@ cd server && npm install
 | `USE_MOCK_AI`   | `false`                            |
 | `OPENAI_API_KEY`| *(API key của bạn)*                |
 | `AI_BASE_URL`   | *(URL custom endpoint, nếu có)*    |
-| `AI_MODEL`      | `gpt-4o-mini` hoặc model khác      |
+| `AI_MODEL`      | `gpt-5.4-mini` hoặc model khác     |
 | `CLIENT_URL`    | `https://your-app.vercel.app`      |
 
 1. Click **Save & Deploy**
