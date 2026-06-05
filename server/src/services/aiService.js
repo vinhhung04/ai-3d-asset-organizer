@@ -76,12 +76,20 @@ async function analyzeAssets(payload) {
     .replace(/{PROJECT_TYPE}/g, projectType)
     .replace('{ASSETS}', assets.map((a, i) => `${i + 1}. ${a}`).join('\n'));
 
-  const completion = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: prompt }],
-    response_format: { type: 'json_object' },
-  });
+  let completion;
+  try {
+    completion = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+    });
+  } catch (apiErr) {
+    // Auth / quota / network errors → fall back to mock AI silently
+    const status = apiErr?.status || apiErr?.response?.status;
+    console.warn(`OpenAI API error (${status || apiErr.code || apiErr.message}) — falling back to Mock AI`);
+    return mockAiService.analyzeAssets(payload);
+  }
 
   const rawText = completion.choices[0].message.content || '';
 
@@ -89,9 +97,8 @@ async function analyzeAssets(payload) {
   try {
     result = JSON.parse(rawText);
   } catch {
-    throw new Error(
-      `AI returned invalid JSON. Raw response: ${rawText.slice(0, 200)}`
-    );
+    console.warn('OpenAI returned invalid JSON — falling back to Mock AI');
+    return mockAiService.analyzeAssets(payload);
   }
 
   return result;
