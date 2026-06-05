@@ -1,3 +1,5 @@
+const { parseAssetsFromInput } = require('../utils/parseAssets');
+
 function validateAnalyzeRequest(body) {
   const { projectName, projectType, inputMode, rawInput } = body;
 
@@ -13,17 +15,12 @@ function validateAnalyzeRequest(body) {
 
   if (inputMode === 'json') {
     try {
-      const parsed = JSON.parse(rawInput);
-      const assets = Array.isArray(parsed) ? parsed : Object.values(parsed);
-      const validAssets = assets.map(String).filter(a => a.trim().length > 0);
-      if (validAssets.length === 0) {
+      const assets = parseAssetsFromInput('json', rawInput);
+      if (assets.length === 0) {
         return { valid: false, message: 'JSON input contains no valid assets.' };
       }
-    } catch {
-      return {
-        valid: false,
-        message: 'Invalid JSON format. Please provide a valid JSON array of asset names.',
-      };
+    } catch (e) {
+      return { valid: false, message: `Invalid JSON: ${e.message}` };
     }
   } else {
     const lines = rawInput.split('\n').map(l => l.trim()).filter(l => l.length > 0);

@@ -27,7 +27,10 @@ Return exactly this JSON structure (fill all fields):
       "asset_type": "<short type slug e.g. panorama, sensor, hotspot, equipment, navigation, room, storage, station, object>",
       "suggested_slug": "<lowercase-hyphen-slug: {project-type-prefix}-{category-token}-{asset-type}-{name}>",
       "priority": "<High | Medium | Low>",
-      "management_note": "<one actionable note for managing this asset>"
+      "management_note": "<one actionable note for managing this asset>",
+      "confidence": <number between 0.6 and 0.98>,
+      "matched_keywords": ["<keyword1>", "..."],
+      "classification_reason": "<brief reason e.g. Matched keywords: panorama, 360>"
     }
   ],
   "organization_suggestions": [
@@ -41,7 +44,15 @@ Return exactly this JSON structure (fill all fields):
       "issue": "<issue description>",
       "suggestion": "<how to fix it>"
     }
-  ]
+  ],
+  "quality_score": {
+    "score": <number 0-100>,
+    "level": "<Excellent | Good | Needs Improvement>",
+    "summary": "<one sentence quality summary>",
+    "deductions": [
+      { "reason": "<reason>", "points": <positive number> }
+    ]
+  }
 }
 
 Categories to use (pick the most specific match):
@@ -58,7 +69,19 @@ Priority rules:
 - Medium: Production Area, Technical Area
 - Low: everything else
 
-If no data quality warnings, return: "data_quality_warnings": []`;
+Confidence rules:
+- 0.90-0.98: clear keyword match (more keywords = higher confidence)
+- 0.60: no keyword matched, fell back to 3D Object
+
+Quality score rules (start from 100):
+- Each duplicate slug: -8 pts
+- Each asset name <4 chars: -10 pts
+- Each 3D Object fallback: -4 pts
+- All assets in one category (>=5): -8 pts
+- Excellent: >=90, Good: >=70, Needs Improvement: <70
+
+If no data quality warnings, return: "data_quality_warnings": []
+If no quality deductions, return: "deductions": []`;
 
 async function analyzeAssets(payload) {
   const useMock =
@@ -68,40 +91,33 @@ async function analyzeAssets(payload) {
     return mockAiService.analyzeAssets(payload);
   }
 
-  const { projectName, projectType, assets } = payload;
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-  const prompt = PROMPT_TEMPLATE
-    .replace(/{PROJECT_NAME}/g, projectName)
-    .replace(/{PROJECT_TYPE}/g, projectType)
-    .replace('{ASSETS}', assets.map((a, i) => `${i + 1}. ${a}`).join('\n'));
-
-  let completion;
   try {
-    completion = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const { projectName, projectType, assets } = payload;
+    const clientOptions = { apiKey: process.env.OPENAI_API_KEY };
+    if (process.env.AI_BASE_URL) clientOptions.baseURL = process.env.AI_BASE_URL;
+    const client = new OpenAI(clientOptions);
+
+    const model = process.env.AI_MODEL || 'gpt-4o-mini';
+
+    const prompt = PROMPT_TEMPLATE
+      .replace(/{PROJECT_NAME}/g, projectName)
+      .replace(/{PROJECT_TYPE}/g, projectType)
+      .replace('{ASSETS}', assets.map((a, i) => `${i + 1}. ${a}`).join('\n'));
+
+    const completion = await client.chat.completions.create({
+      model,
       max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
     });
-  } catch (apiErr) {
-    // Auth / quota / network errors → fall back to mock AI silently
-    const status = apiErr?.status || apiErr?.response?.status;
-    console.warn(`OpenAI API error (${status || apiErr.code || apiErr.message}) — falling back to Mock AI`);
+
+    const rawText = completion.choices[0].message.content || '';
+    return JSON.parse(rawText);
+  } catch (err) {
+    const status = err?.status || err?.response?.status;
+    console.warn(`OpenAI error (${status || err.message}) — falling back to Mock AI`);
     return mockAiService.analyzeAssets(payload);
   }
-
-  const rawText = completion.choices[0].message.content || '';
-
-  let result;
-  try {
-    result = JSON.parse(rawText);
-  } catch {
-    console.warn('OpenAI returned invalid JSON — falling back to Mock AI');
-    return mockAiService.analyzeAssets(payload);
-  }
-
-  return result;
 }
 
 module.exports = { analyzeAssets };

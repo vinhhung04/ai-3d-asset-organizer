@@ -5,6 +5,9 @@ export interface ClassifiedAsset {
   suggested_slug: string;
   priority: 'High' | 'Medium' | 'Low';
   management_note: string;
+  confidence?: number;
+  classification_reason?: string;
+  matched_keywords?: string[];
 }
 
 export interface DataQualityWarning {
@@ -22,11 +25,19 @@ export interface ProjectMetadata {
   recommended_naming_convention: string;
 }
 
+export interface QualityScore {
+  score: number;
+  level: 'Excellent' | 'Good' | 'Needs Improvement';
+  summary: string;
+  deductions: { reason: string; points: number }[];
+}
+
 export interface AnalysisResult {
   project_metadata: ProjectMetadata;
   classified_assets: ClassifiedAsset[];
   organization_suggestions: string[];
   data_quality_warnings: DataQualityWarning[];
+  quality_score?: QualityScore;
 }
 
 export interface AnalyzeRequest {

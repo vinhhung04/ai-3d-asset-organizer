@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { validateAnalyzeRequest } = require('../validators/analyzeValidator');
+const { parseAssetsFromInput } = require('../utils/parseAssets');
 const { analyzeAssets } = require('../services/aiService');
 
 router.post('/', async (req, res) => {
@@ -12,13 +13,10 @@ router.post('/', async (req, res) => {
   const { projectName, projectType, inputMode, rawInput } = req.body;
 
   let assets;
-  if (inputMode === 'json') {
-    const parsed = JSON.parse(rawInput);
-    assets = (Array.isArray(parsed) ? parsed : Object.values(parsed))
-      .map(String)
-      .filter(a => a.trim().length > 0);
-  } else {
-    assets = rawInput.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  try {
+    assets = parseAssetsFromInput(inputMode, rawInput);
+  } catch (e) {
+    return res.status(400).json({ success: false, message: e.message });
   }
 
   try {

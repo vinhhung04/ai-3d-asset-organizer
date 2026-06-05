@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Boxes, Zap, Github } from 'lucide-react';
-import InputPanel, { DEMO_DATA } from './components/InputPanel';
+import InputPanel from './components/InputPanel';
 import OutputDashboard from './components/OutputDashboard';
 import { analyzeAssets } from './services/api';
 import type { AnalysisResult, AppState, InputMode } from './types';
@@ -15,11 +15,11 @@ export default function App() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleLoadDemo = () => {
-    setProjectName(DEMO_DATA.projectName);
-    setProjectType(DEMO_DATA.projectType);
+  const handleLoadDemo = (preset: { projectName: string; projectType: string; rawInput: string }) => {
+    setProjectName(preset.projectName);
+    setProjectType(preset.projectType);
     setInputMode('text');
-    setRawInput(DEMO_DATA.rawInput);
+    setRawInput(preset.rawInput);
     setAppState('idle');
     setResult(null);
     setErrorMessage('');
@@ -87,7 +87,7 @@ export default function App() {
               </p>
             </div>
             <a
-              href="https://github.com"
+              href="https://github.com/vinhhung04/ai-3d-asset-organizer"
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors mt-1"

@@ -10,11 +10,15 @@ Built as an internship test submission for **StarGlobal 3D** — demonstrating p
 
 - **AI Asset Classification** — automatically categorizes assets into 12 domain-specific types (360 Panorama, Safety Area, IoT/Sensor Point, etc.)
 - **Slug Generation** — produces clean, consistent, lowercase-hyphen slugs following a structured format
+- **Auto Duplicate-Slug Fix** — duplicate slugs are automatically resolved with `-01`/`-02` suffixes
 - **Project Metadata** — builds a structured summary with category breakdown and naming convention
+- **Asset Quality Score** — 0–100 score with level badge (Excellent / Good / Needs Improvement) and per-issue deductions
+- **Confidence & Classification Reason** — each asset shows its AI confidence % and why it was classified
 - **Organization Suggestions** — 3 AI-generated recommendations for better asset management
 - **Data Quality Warnings** — flags duplicate slugs, ambiguous names, and naming inconsistencies
+- **CSV Export** — download full classification table with confidence and classification reason columns
 - **Raw JSON Export** — copy full structured output to clipboard
-- **Demo Mode** — one-click Factory project demo for immediate testing
+- **5 Demo Presets** — Smart Factory, Retail Showroom, Apartment, Museum, Office — for immediate testing
 - **Mock AI Fallback** — works fully without any API key using intelligent keyword-based classification
 - **Responsive Design** — dark SaaS dashboard UI, works on desktop and mobile
 - **Production Deployable** — backend on Render, frontend on Vercel
@@ -28,7 +32,7 @@ Built as an internship test submission for **StarGlobal 3D** — demonstrating p
 | Frontend | React 18 + Vite + TypeScript        |
 | Styling  | Tailwind CSS + lucide-react icons   |
 | Backend  | Node.js + Express                   |
-| AI       | Anthropic Claude API (Haiku)        |
+| AI       | OpenAI GPT-4o-mini                  |
 | Fallback | Keyword-based mock AI               |
 | Deploy   | Vercel (frontend) + Render (backend)|
 
@@ -42,7 +46,7 @@ Built as an internship test submission for **StarGlobal 3D** — demonstrating p
 cd server
 npm install
 cp .env.example .env
-# Edit .env if needed (default: USE_MOCK_AI=true)
+# Edit .env if needed (default: USE_MOCK_AI=true, works without any key)
 npm run dev
 ```
 
@@ -53,7 +57,6 @@ Server starts at `http://localhost:3001`
 ```bash
 cd client
 npm install
-# Optionally: cp .env.example .env.local
 npm run dev
 ```
 
@@ -61,7 +64,7 @@ Client starts at `http://localhost:5173`
 
 ### 3. Open the app
 
-Navigate to [http://localhost:5173](http://localhost:5173), click **Load Demo Factory** and then **Analyze Assets**.
+Navigate to [http://localhost:5173](http://localhost:5173), pick a demo preset from the **Load Demo...** dropdown, and click **Analyze Assets**.
 
 ---
 
@@ -72,27 +75,27 @@ Navigate to [http://localhost:5173](http://localhost:5173), click **Load Demo Fa
 | Variable           | Default                    | Description                              |
 |--------------------|----------------------------|------------------------------------------|
 | `PORT`             | `3001`                     | Server port                              |
-| `USE_MOCK_AI`      | `true`                     | Use mock AI instead of Claude API        |
-| `ANTHROPIC_API_KEY`| *(empty)*                  | Your Anthropic API key (optional)        |
+| `USE_MOCK_AI`      | `true`                     | Use mock AI instead of OpenAI API        |
+| `OPENAI_API_KEY`   | *(empty)*                  | Your OpenAI API key (optional)           |
 | `CLIENT_URL`       | `http://localhost:5173`    | Frontend URL for CORS whitelist          |
 
 ### Client (`client/.env.local`)
 
-| Variable              | Default | Description                              |
-|-----------------------|---------|------------------------------------------|
-| `VITE_API_BASE_URL`   | *(empty)*| Backend URL (empty = use Vite dev proxy) |
+| Variable              | Default   | Description                              |
+|-----------------------|-----------|------------------------------------------|
+| `VITE_API_BASE_URL`   | *(empty)* | Backend URL (empty = use Vite dev proxy) |
 
 ---
 
-## Enable Claude AI (Real Mode)
+## Enable OpenAI (Real Mode)
 
-1. Get an API key from [console.anthropic.com](https://console.anthropic.com)
+1. Get an API key from [platform.openai.com](https://platform.openai.com)
 2. In `server/.env`, set:
    ```
    USE_MOCK_AI=false
-   ANTHROPIC_API_KEY=sk-ant-...
+   OPENAI_API_KEY=sk-...
    ```
-3. Restart the server
+3. Restart the server — the app falls back to mock AI automatically on any API error
 
 ---
 
@@ -110,7 +113,7 @@ Navigate to [http://localhost:5173](http://localhost:5173), click **Load Demo Fa
    USE_MOCK_AI=true
    CLIENT_URL=https://your-app.vercel.app
    ```
-7. Optional: add `ANTHROPIC_API_KEY` for real AI
+7. Optional: add `OPENAI_API_KEY` for real AI (set `USE_MOCK_AI=false`)
 
 ### Frontend → Vercel (free)
 
@@ -145,9 +148,26 @@ Navigate to [http://localhost:5173](http://localhost:5173), click **Load Demo Fa
   "success": true,
   "data": {
     "project_metadata": { ... },
-    "classified_assets": [ ... ],
+    "classified_assets": [
+      {
+        "original_name": "Main entrance 360 panorama",
+        "category": "360 Panorama",
+        "suggested_slug": "factory-panorama-panorama-main-entrance-360-panorama",
+        "priority": "Low",
+        "confidence": 0.94,
+        "matched_keywords": ["panorama", "360"],
+        "classification_reason": "Matched keywords: panorama, 360",
+        ...
+      }
+    ],
     "organization_suggestions": [ ... ],
-    "data_quality_warnings": [ ... ]
+    "data_quality_warnings": [ ... ],
+    "quality_score": {
+      "score": 88,
+      "level": "Good",
+      "summary": "Good quality overall with minor improvements possible.",
+      "deductions": [{ "reason": "2 asset(s) fell back to generic 3D Object", "points": 8 }]
+    }
   }
 }
 ```
@@ -166,28 +186,31 @@ Returns server status and current AI mode.
 
 ---
 
-## Demo Input
+## Additional Enhancements Beyond Requirements
 
-**Project Name:** Smart Factory 3D/360 Demo  
-**Project Type:** Factory
+| Enhancement | Description |
+|---|---|
+| Asset Quality Score | 0–100 score with level badge and itemized deductions |
+| Confidence score per asset | Each asset shows AI confidence % and matched keywords |
+| Auto duplicate-slug fix | Duplicates get `-01`/`-02` suffix instead of just a warning |
+| CSV export | Download full table with 8 columns including confidence and reason |
+| 5 demo presets | Smart Factory, Retail Showroom, Apartment, Museum, Office |
+| JSON input formats | Supports string array, object array `{name}`, `{assets:[]}` wrapper |
 
-```
-Main entrance 360 panorama
-Reception desk
-Production line overview
-Machine control panel
-Electrical cabinet
-Server room
-Safety instruction hotspot
-Emergency exit door
-Fire extinguisher
-IoT temperature sensor
-Employee training hotspot
-Warehouse storage area
-Quality inspection station
-Control room
-Visitor route marker
-```
+---
+
+## Mapping to Option B Requirements
+
+| Requirement | Implementation |
+|---|---|
+| Asset input field | Textarea (Raw Text or Simple JSON modes) |
+| Project type selection | Dropdown: 8 types (Factory, Office, Retail Showroom, etc.) |
+| AI classification | OpenAI GPT-4o-mini (or mock AI fallback) |
+| Slug generation | `{type-prefix}-{category-token}-{asset-type}-{name}` format |
+| Project metadata | Name, type, total, categories, summary, naming convention |
+| Organization suggestions | 3 AI-generated CMS/workflow recommendations |
+| Data quality warnings | Duplicate slugs, short names, auto-fix annotations |
+| Professional UI | Dark SaaS dashboard, Tailwind CSS, responsive |
 
 ---
 

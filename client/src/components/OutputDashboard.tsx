@@ -7,6 +7,8 @@ import AssetsTable from './AssetsTable';
 import SuggestionsPanel from './SuggestionsPanel';
 import WarningsPanel from './WarningsPanel';
 import JsonPreview from './JsonPreview';
+import QualityScoreCard from './QualityScoreCard';
+import { exportToCsv } from '../utils/exportCsv';
 
 interface OutputDashboardProps {
   appState: AppState;
@@ -52,7 +54,11 @@ export default function OutputDashboard({ appState, result, errorMessage }: Outp
     return (
       <div className="space-y-4">
         <MetadataCard metadata={result.project_metadata} />
-        <AssetsTable assets={result.classified_assets} />
+        {result.quality_score && <QualityScoreCard score={result.quality_score} />}
+        <AssetsTable
+          assets={result.classified_assets}
+          onExport={() => exportToCsv(result)}
+        />
         <SuggestionsPanel suggestions={result.organization_suggestions} />
         <WarningsPanel warnings={result.data_quality_warnings} />
         <JsonPreview data={result} />
