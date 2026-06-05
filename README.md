@@ -27,44 +27,166 @@ Built as an internship test submission for **StarGlobal 3D** — demonstrating p
 
 ## Tech Stack
 
-| Layer    | Technology                          |
-|----------|-------------------------------------|
-| Frontend | React 18 + Vite + TypeScript        |
-| Styling  | Tailwind CSS + lucide-react icons   |
-| Backend  | Node.js + Express                   |
-| AI       | OpenAI GPT-4o-mini                  |
-| Fallback | Keyword-based mock AI               |
-| Deploy   | Vercel (frontend) + Render (backend)|
+| Layer    | Technology                           |
+|----------|--------------------------------------|
+| Frontend | React 18 + Vite + TypeScript         |
+| Styling  | Tailwind CSS + lucide-react icons    |
+| Backend  | Node.js + Express                    |
+| AI       | OpenAI GPT-4o-mini (or compatible)   |
+| Fallback | Keyword-based mock AI                |
+| Deploy   | Vercel (frontend) + Render (backend) |
 
 ---
 
-## Run Locally
+## Local Setup (Chi tiết)
 
-### 1. Clone & setup server
+### Yêu cầu
+
+- **Node.js** >= 18.0.0 — kiểm tra bằng `node -v`
+- **npm** >= 8 — kiểm tra bằng `npm -v`
+- Git
+
+### Bước 1 — Clone repo
+
+```bash
+git clone https://github.com/vinhhung04/ai-3d-asset-organizer.git
+cd ai-3d-asset-organizer
+```
+
+---
+
+### Bước 2 — Cài đặt Backend (server)
+
+Mở terminal, di chuyển vào thư mục `server`:
 
 ```bash
 cd server
+```
+
+Cài dependencies:
+
+```bash
 npm install
-cp .env.example .env
-# Edit .env if needed (default: USE_MOCK_AI=true, works without any key)
+```
+
+Tạo file `.env` từ template:
+
+```bash
+cp .env.example .env     # Mac/Linux
+copy .env.example .env   # Windows
+```
+
+File `server/.env` mặc định:
+
+```env
+PORT=3001
+USE_MOCK_AI=true
+OPENAI_API_KEY=
+AI_BASE_URL=
+AI_MODEL=
+CLIENT_URL=http://localhost:5173
+```
+
+> Với cài đặt mặc định (`USE_MOCK_AI=true`), server chạy được ngay **không cần API key**.
+
+Khởi động server ở chế độ dev (auto-reload):
+
+```bash
 npm run dev
 ```
 
-Server starts at `http://localhost:3001`
+Kết quả thành công:
 
-### 2. Setup client (new terminal)
+```text
+[nodemon] starting `node src/index.js`
+Server running on port 3001 [mode: Mock AI]
+```
+
+Kiểm tra server đang chạy: mở trình duyệt vào `http://localhost:3001/health`
+
+```json
+{ "status": "ok", "mode": "mock-ai", "timestamp": "..." }
+```
+
+---
+
+### Bước 3 — Cài đặt Frontend (client)
+
+Mở **terminal mới** (giữ nguyên terminal server), di chuyển vào thư mục `client`:
 
 ```bash
 cd client
+```
+
+Cài dependencies:
+
+```bash
 npm install
+```
+
+Khởi động client:
+
+```bash
 npm run dev
 ```
 
-Client starts at `http://localhost:5173`
+Kết quả thành công:
 
-### 3. Open the app
+```text
+  VITE v5.x.x  ready in 300 ms
 
-Navigate to [http://localhost:5173](http://localhost:5173), pick a demo preset from the **Load Demo...** dropdown, and click **Analyze Assets**.
+  ➜  Local:   http://localhost:5173/
+```
+
+---
+
+### Bước 4 — Mở ứng dụng
+
+Truy cập [http://localhost:5173](http://localhost:5173)
+
+Để test nhanh:
+
+1. Click dropdown **"Load Demo..."** → chọn **Smart Factory**
+1. Click **Analyze Assets**
+1. Kết quả phân loại xuất hiện ở panel bên phải
+
+---
+
+## Chạy với AI thật (OpenAI)
+
+Nếu muốn dùng AI thật thay vì Mock AI:
+
+### Dùng OpenAI trực tiếp
+
+1. Lấy API key tại [platform.openai.com](https://platform.openai.com)
+2. Sửa `server/.env`:
+
+```env
+USE_MOCK_AI=false
+OPENAI_API_KEY=sk-...
+AI_MODEL=gpt-4o-mini
+```
+
+1. Restart server: `Ctrl+C` rồi `npm run dev`
+
+Kết quả:
+
+```text
+Server running on port 3001 [mode: OpenAI GPT-4o-mini]
+```
+
+### Dùng custom OpenAI-compatible endpoint
+
+Nếu có endpoint tương thích OpenAI (ví dụ proxy):
+
+```env
+USE_MOCK_AI=false
+OPENAI_API_KEY=sk-...           # key của endpoint đó
+AI_BASE_URL=https://your-endpoint.com/v1
+AI_MODEL=gpt-5.4-mini           # model endpoint đó hỗ trợ
+```
+
+> Nếu AI gặp lỗi (sai key, hết quota, v.v.), server tự động fallback về Mock AI.
 
 ---
 
@@ -72,59 +194,108 @@ Navigate to [http://localhost:5173](http://localhost:5173), pick a demo preset f
 
 ### Server (`server/.env`)
 
-| Variable           | Default                    | Description                              |
-|--------------------|----------------------------|------------------------------------------|
-| `PORT`             | `3001`                     | Server port                              |
-| `USE_MOCK_AI`      | `true`                     | Use mock AI instead of OpenAI API        |
-| `OPENAI_API_KEY`   | *(empty)*                  | Your OpenAI API key (optional)           |
-| `CLIENT_URL`       | `http://localhost:5173`    | Frontend URL for CORS whitelist          |
+| Biến               | Mặc định                | Mô tả                                                |
+|--------------------|-------------------------|------------------------------------------------------|
+| `PORT`             | `3001`                  | Port server lắng nghe                                |
+| `USE_MOCK_AI`      | `true`                  | `true` = dùng mock AI, `false` = dùng OpenAI thật    |
+| `OPENAI_API_KEY`   | *(trống)*               | API key OpenAI hoặc compatible endpoint              |
+| `AI_BASE_URL`      | *(trống)*               | Custom endpoint URL (để trống = dùng OpenAI mặc định)|
+| `AI_MODEL`         | `gpt-4o-mini`           | Tên model muốn dùng                                  |
+| `CLIENT_URL`       | `http://localhost:5173` | URL frontend — dùng cho CORS whitelist               |
 
-### Client (`client/.env.local`)
+### Client (`client/.env.local`) — tùy chọn
 
-| Variable              | Default   | Description                              |
-|-----------------------|-----------|------------------------------------------|
-| `VITE_API_BASE_URL`   | *(empty)* | Backend URL (empty = use Vite dev proxy) |
+Mặc định client tự gọi `http://localhost:3001` thông qua Vite proxy. Chỉ cần tạo file này khi backend chạy ở host khác:
 
----
+```env
+VITE_API_BASE_URL=http://localhost:3001
+```
 
-## Enable OpenAI (Real Mode)
-
-1. Get an API key from [platform.openai.com](https://platform.openai.com)
-2. In `server/.env`, set:
-   ```
-   USE_MOCK_AI=false
-   OPENAI_API_KEY=sk-...
-   ```
-3. Restart the server — the app falls back to mock AI automatically on any API error
+| Variable            | Default   | Description                                         |
+|---------------------|-----------|-----------------------------------------------------|
+| `VITE_API_BASE_URL` | *(empty)* | Backend URL (empty = use Vite dev proxy port 3001)  |
 
 ---
 
-## Deploy to Production
+## Xử lý lỗi thường gặp
 
-### Backend → Render (free)
+### `EADDRINUSE: address already in use :::3001`
 
-1. Push this repo to GitHub
-2. Go to [render.com](https://render.com) → New Web Service
-3. Connect your repo, set **Root Directory** to `server`
+Port 3001 đang bị process khác chiếm. Kill process đó:
+
+**Windows:**
+
+```powershell
+# Tìm PID đang dùng port 3001
+netstat -ano | findstr :3001
+
+# Kill process (thay <PID> bằng số thực)
+taskkill /PID <PID> /F
+```
+
+**Mac/Linux:**
+```bash
+lsof -ti:3001 | xargs kill -9
+```
+
+---
+
+### Server khởi động nhưng client báo lỗi kết nối
+
+Kiểm tra:
+
+1. Server có đang chạy không? → `http://localhost:3001/health`
+1. `CLIENT_URL` trong `server/.env` có đúng là `http://localhost:5173` không?
+1. Cả 2 terminal server và client có đang mở không?
+
+---
+
+### `Cannot find module` khi chạy server
+
+Chưa cài dependencies:
+
+```bash
+cd server && npm install
+```
+
+---
+
+## Deploy lên Production
+
+### Backend → Render
+
+1. Push repo lên GitHub
+2. Vào [render.com](https://render.com) → **New Web Service**
+3. Kết nối repo → set **Root Directory**: `server`
 4. Build command: `npm install`
 5. Start command: `npm start`
-6. Add environment variables:
-   ```
-   USE_MOCK_AI=true
-   CLIENT_URL=https://your-app.vercel.app
-   ```
-7. Optional: add `OPENAI_API_KEY` for real AI (set `USE_MOCK_AI=false`)
+6. Thêm environment variables:
 
-### Frontend → Vercel (free)
+| Key             | Value                              |
+|-----------------|------------------------------------|
+| `USE_MOCK_AI`   | `false`                            |
+| `OPENAI_API_KEY`| *(API key của bạn)*                |
+| `AI_BASE_URL`   | *(URL custom endpoint, nếu có)*    |
+| `AI_MODEL`      | `gpt-4o-mini` hoặc model khác      |
+| `CLIENT_URL`    | `https://your-app.vercel.app`      |
 
-1. Go to [vercel.com](https://vercel.com) → New Project
-2. Connect your repo, set **Root Directory** to `client`
-3. Framework preset: **Vite**
-4. Add environment variable:
-   ```
-   VITE_API_BASE_URL=https://your-render-service.onrender.com
-   ```
-5. Deploy
+1. Click **Save & Deploy**
+
+### Frontend → Vercel
+
+1. Vào [vercel.com](https://vercel.com) → **New Project**
+1. Kết nối repo → set **Root Directory**: `client`
+1. Framework preset: **Vite**
+1. Thêm environment variable:
+
+| Key                 | Value                                        |
+|---------------------|----------------------------------------------|
+| `VITE_API_BASE_URL` | `https://your-render-service.onrender.com`   |
+
+1. Click **Deploy**
+
+> **Lưu ý thứ tự:** Deploy Render trước → lấy URL → set vào Vercel → deploy Vercel → lấy URL → set `CLIENT_URL` vào Render → Render sẽ tự restart.
+> **Render free tier** sẽ sleep sau 15 phút không có request. Lần đầu gọi có thể chờ 30–60 giây.
 
 ---
 
@@ -133,6 +304,7 @@ Navigate to [http://localhost:5173](http://localhost:5173), pick a demo preset f
 ### `POST /api/analyze-assets`
 
 **Request body:**
+
 ```json
 {
   "projectName": "Smart Factory 3D/360 Demo",
@@ -142,37 +314,49 @@ Navigate to [http://localhost:5173](http://localhost:5173), pick a demo preset f
 }
 ```
 
+`inputMode` nhận `"text"` (mỗi dòng 1 asset) hoặc `"json"` (mảng JSON).
+
 **Success response:**
+
 ```json
 {
   "success": true,
   "data": {
-    "project_metadata": { ... },
+    "project_metadata": {
+      "project_name": "Smart Factory 3D/360 Demo",
+      "project_type": "Factory",
+      "total_assets": 3,
+      "main_categories": ["360 Panorama", "Facility / Equipment", "Technical Area"],
+      "summary": "...",
+      "recommended_naming_convention": "..."
+    },
     "classified_assets": [
       {
         "original_name": "Main entrance 360 panorama",
         "category": "360 Panorama",
-        "suggested_slug": "factory-panorama-panorama-main-entrance-360-panorama",
+        "asset_type": "panorama",
+        "suggested_slug": "factory-panorama-panorama-main-entrance-360",
         "priority": "Low",
+        "management_note": "...",
         "confidence": 0.94,
         "matched_keywords": ["panorama", "360"],
-        "classification_reason": "Matched keywords: panorama, 360",
-        ...
+        "classification_reason": "Matched keywords: panorama, 360"
       }
     ],
-    "organization_suggestions": [ ... ],
-    "data_quality_warnings": [ ... ],
+    "organization_suggestions": ["...", "...", "..."],
+    "data_quality_warnings": [],
     "quality_score": {
       "score": 88,
       "level": "Good",
       "summary": "Good quality overall with minor improvements possible.",
-      "deductions": [{ "reason": "2 asset(s) fell back to generic 3D Object", "points": 8 }]
+      "deductions": []
     }
   }
 }
 ```
 
 **Error response:**
+
 ```json
 {
   "success": false,
@@ -182,56 +366,64 @@ Navigate to [http://localhost:5173](http://localhost:5173), pick a demo preset f
 
 ### `GET /health`
 
-Returns server status and current AI mode.
+Trả về trạng thái server và chế độ AI đang dùng.
+
+```json
+{
+  "status": "ok",
+  "mode": "openai-gpt4o-mini",
+  "timestamp": "2025-06-05T10:00:00.000Z"
+}
+```
 
 ---
 
-## Additional Enhancements Beyond Requirements
+## Cấu trúc thư mục
 
-| Enhancement | Description |
-|---|---|
-| Asset Quality Score | 0–100 score with level badge and itemized deductions |
-| Confidence score per asset | Each asset shows AI confidence % and matched keywords |
-| Auto duplicate-slug fix | Duplicates get `-01`/`-02` suffix instead of just a warning |
-| CSV export | Download full table with 8 columns including confidence and reason |
-| 5 demo presets | Smart Factory, Retail Showroom, Apartment, Museum, Office |
-| JSON input formats | Supports string array, object array `{name}`, `{assets:[]}` wrapper |
-
----
-
-## Mapping to Option B Requirements
-
-| Requirement | Implementation |
-|---|---|
-| Asset input field | Textarea (Raw Text or Simple JSON modes) |
-| Project type selection | Dropdown: 8 types (Factory, Office, Retail Showroom, etc.) |
-| AI classification | OpenAI GPT-4o-mini (or mock AI fallback) |
-| Slug generation | `{type-prefix}-{category-token}-{asset-type}-{name}` format |
-| Project metadata | Name, type, total, categories, summary, naming convention |
-| Organization suggestions | 3 AI-generated CMS/workflow recommendations |
-| Data quality warnings | Duplicate slugs, short names, auto-fix annotations |
-| Professional UI | Dark SaaS dashboard, Tailwind CSS, responsive |
+```text
+ai-3d-asset-organizer/
+├── client/                  # React + Vite frontend
+│   ├── src/
+│   │   ├── components/      # UI components
+│   │   ├── services/        # API calls
+│   │   ├── types/           # TypeScript types
+│   │   └── utils/           # Helper functions
+│   ├── .env.example
+│   └── package.json
+│
+├── server/                  # Node.js + Express backend
+│   ├── src/
+│   │   ├── routes/          # Express routes
+│   │   ├── services/        # AI service + mock AI
+│   │   ├── utils/           # Asset parser, slug utils
+│   │   └── validators/      # Request validation
+│   ├── .env.example
+│   └── package.json
+│
+└── README.md
+```
 
 ---
 
 ## Mock AI Behavior
 
-When `USE_MOCK_AI=true` (default), the system uses keyword-based classification:
+Khi `USE_MOCK_AI=true`, hệ thống dùng keyword-based classification:
 
 | Keywords | Category |
 |---|---|
 | panorama, 360, overview | 360 Panorama |
-| safety, fire, emergency | Safety Area |
-| sensor, iot, temperature | IoT / Sensor Point |
-| hotspot | Interactive Hotspot |
-| training, instruction | Training / Annotation |
-| machine, production | Production Area |
-| electrical, control, server | Technical Area |
-| entrance, reception, visitor | Public Area |
-| warehouse, storage | Private Area |
-| inspection, quality | Production Area |
+| fire extinguisher, emergency exit, safety | Safety Area |
+| sensor, IoT, temperature, CCTV | IoT / Sensor Point |
+| hotspot, info point, interactive | Interactive Hotspot |
+| training, instruction, annotation | Training / Annotation |
+| route, marker, waypoint | Navigation Point |
+| chair, table, desk, machine, panel | Facility / Equipment |
+| production line, assembly, workshop | Production Area |
+| server room, electrical, control room | Technical Area |
+| entrance, lobby, reception | Public Area |
+| office, meeting room, conference | Private Area |
 
-Priority rules: **High** = Safety/IoT · **Medium** = Production/Technical · **Low** = everything else
+Priority: **High** = Safety/IoT · **Medium** = Production/Technical · **Low** = everything else
 
 ---
 
