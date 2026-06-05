@@ -78,7 +78,7 @@ async function analyzeAssets(payload) {
     .replace('{ASSETS}', assets.map((a, i) => `${i + 1}. ${a}`).join('\n'));
 
   const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: 'claude-sonnet-4-6',
     max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
   });
